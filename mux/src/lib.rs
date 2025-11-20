@@ -535,6 +535,7 @@ impl Mux {
             }
         }
         if let Some(pane) = self.get_pane(pane_id) {
+            Mux::get().increment_pane_focus_serial();
             pane.focus_changed(true);
         }
     }

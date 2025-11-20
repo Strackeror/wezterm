@@ -231,10 +231,14 @@ impl ClientPane {
                 log::trace!("advised of remote pane focus: {pane_id}");
 
                 let mux = Mux::get();
-                let client_pane_focus_serial = mux.current_pane_focus_serial();
-                if pane_focus_serial.is_none_or(|server_pane_focus_serial| {
-                    server_pane_focus_serial >= client_pane_focus_serial
-                }) {
+
+                // Check we have not already received a pane focus change that's newer than this
+                // This prevents some infinite loops where two pane focuses are queued very quickly
+                // and the focus keeps bouncing back and forth
+                let client_serial = mux.current_pane_focus_serial();
+                let is_new = pane_focus_serial.is_none_or(|req_serial| req_serial >= client_serial);
+
+                if is_new {
                     if let Err(err) = mux.focus_pane_and_containing_tab(self.local_pane_id) {
                         log::error!("Error reconciling remote PaneFocused notification: {err:#}");
                     }
